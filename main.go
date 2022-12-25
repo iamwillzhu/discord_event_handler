@@ -80,7 +80,7 @@ func VerifyInteraction(r *events.APIGatewayProxyRequest, key ed25519.PublicKey) 
 	return ed25519.Verify(key, msg.Bytes(), sig)
 }
 
-func Handler(request *events.APIGatewayProxyRequest) *events.APIGatewayProxyResponse {
+func Handler(request *events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 
 	log.Printf("request: %v", request)
 
@@ -90,7 +90,7 @@ func Handler(request *events.APIGatewayProxyRequest) *events.APIGatewayProxyResp
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 500,
 			Body:       "Internal Error: discord public key is not found",
-		}
+		}, nil
 	}
 
 	key, err := hex.DecodeString(discordPublicKey)
@@ -98,13 +98,13 @@ func Handler(request *events.APIGatewayProxyRequest) *events.APIGatewayProxyResp
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 500,
 			Body:       fmt.Sprintf("Internal Error: %s", err.Error()),
-		}
+		}, nil
 	}
 
 	if ok := VerifyInteraction(request, key); !ok {
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 401,
-		}
+		}, nil
 	}
 
 	interactionResponse := InteractionResponse{
@@ -116,7 +116,7 @@ func Handler(request *events.APIGatewayProxyRequest) *events.APIGatewayProxyResp
 	return &events.APIGatewayProxyResponse{
 		StatusCode: 200,
 		Body:       string(interactionResponseStr),
-	}
+	}, nil
 }
 
 func main() {
