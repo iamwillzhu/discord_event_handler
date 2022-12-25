@@ -47,7 +47,7 @@ type InteractionResponse struct {
 func VerifyInteraction(r *events.APIGatewayProxyRequest, key ed25519.PublicKey) bool {
 	var msg bytes.Buffer
 
-	signature, ok := r.Headers["X-Signature-Ed25519"]
+	signature, ok := r.Headers["x-signature-ed25519"]
 	if !ok || signature == "" {
 		return false
 	}
@@ -61,7 +61,7 @@ func VerifyInteraction(r *events.APIGatewayProxyRequest, key ed25519.PublicKey) 
 		return false
 	}
 
-	timestamp, ok := r.Headers["X-Signature-Timestamp"]
+	timestamp, ok := r.Headers["x-signature-timestamp"]
 	if !ok || timestamp == "" {
 		return false
 	}
