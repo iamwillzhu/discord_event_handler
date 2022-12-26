@@ -9,7 +9,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/iamwillzhu/discord_event_handler/interaction"
+	"github.com/bwmarrin/discordgo"
 )
 
 func Handler(request *events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
@@ -19,9 +19,10 @@ func Handler(request *events.APIGatewayProxyRequest) (*events.APIGatewayProxyRes
 	discordPublicKey := os.Getenv("DISCORD_PUBLIC_KEY")
 
 	if discordPublicKey == "" {
+		log.Println("[Handler] discord public key is not found")
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 500,
-			Body:       "Internal Error: discord public key is not found",
+			Body:       "Internal Error: something went wrong",
 		}, nil
 	}
 
@@ -33,14 +34,28 @@ func Handler(request *events.APIGatewayProxyRequest) (*events.APIGatewayProxyRes
 		}, nil
 	}
 
-	if ok := interaction.VerifyInteraction(request, key); !ok {
+	if ok := VerifyInteraction(request, key); !ok {
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 401,
 		}, nil
 	}
 
-	interactionResponse := interaction.InteractionResponse{
-		Type: interaction.InteractionResponsePong,
+	interaction, err := getInteraction(request)
+
+	if err != nil {
+		return &events.APIGatewayProxyResponse{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("Internal Error: %s", err.Error()),
+		}, nil
+	}
+
+	interactionResponse, err := handleInteraction(interaction)
+
+	if err != nil {
+		return &events.APIGatewayProxyResponse{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("Internal Error: %s", err.Error()),
+		}, nil
 	}
 
 	interactionResponseStr, _ := json.Marshal(interactionResponse)
@@ -49,6 +64,48 @@ func Handler(request *events.APIGatewayProxyRequest) (*events.APIGatewayProxyRes
 		StatusCode: 200,
 		Body:       string(interactionResponseStr),
 	}, nil
+}
+
+func getInteraction(request *events.APIGatewayProxyRequest) (*discordgo.Interaction, error) {
+	interaction := &discordgo.Interaction{}
+
+	if err := interaction.UnmarshalJSON([]byte(request.Body)); err != nil {
+		log.Printf("[getIteraction] UnmarshalJSON error: %v", err)
+		return nil, err
+	}
+
+	return interaction, nil
+}
+
+func handleInteraction(interaction *discordgo.Interaction) (*discordgo.InteractionResponse, error) {
+	if interaction.Type == discordgo.InteractionPing {
+		return &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponsePong,
+		}, nil
+	}
+
+	if interaction.Type == discordgo.InteractionApplicationCommand {
+		applicationCommandData := interaction.ApplicationCommandData()
+
+		if applicationCommandData.Name == "foo" {
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "bar",
+				},
+			}, nil
+		}
+
+		return &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "invalid slash command",
+			},
+		}, nil
+
+	}
+
+	return nil, fmt.Errorf("interaction type not supported")
 }
 
 func main() {
