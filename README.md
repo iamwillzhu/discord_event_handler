@@ -6,11 +6,22 @@ If you're looking for an in-depth guide on how to build a serverless discord bot
 
 ## Table of contents
 
+- [Demo](#demo)
 - [High Level Architecture](#high-level-architecture)
 - [Deploy AWS Lambda](#deploy-aws-lambda)
 - [Discord Interactions Endpoint URL Verification](#discord-interactions-endpoint-url-verification)
 - [Register Discord Slash Commands](#register-discord-slash-commands)
 - [Helpful Extra Resources](#helpful-extra-resources)
+
+## Demo
+
+### Entering discord slash command
+
+![enter discord slash command](./assets/discord_enter_command.png)
+
+### Receiving the discord bot response
+
+![receive discord bot response](./assets/discord_receive_response.png)
 
 ## High Level Architecture
 
